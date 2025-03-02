@@ -1,10 +1,7 @@
 // app/api/sync/route.ts
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-
-// 開発用の簡易的なインメモリストレージ
-// 注: 本番環境では永続的なデータベースを使用すべき
-const dataStore = new Map<string, { data: any; timestamp: string }>();
+import { kv } from '@vercel/kv';
 
 export async function POST(request: Request) {
   try {
@@ -21,8 +18,8 @@ export async function POST(request: Request) {
     // 既存のIDがあればそれを使い、なければ新規作成
     const syncId = id || uuidv4();
     
-    // データとタイムスタンプを保存
-    dataStore.set(syncId, {
+    // Vercel KVを使用してデータを保存
+    await kv.set(syncId, {
       data,
       timestamp: new Date().toISOString()
     });
@@ -36,7 +33,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('データ保存エラー:', error);
     return NextResponse.json(
-      { success: false, message: 'サーバーエラーが発生しました' },
+      { success: false, message: `サーバーエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}` },
       { status: 500 }
     );
   }
@@ -54,7 +51,8 @@ export async function GET(request: Request) {
       );
     }
     
-    const storedData = dataStore.get(id);
+    // Vercel KVからデータを取得
+    const storedData = await kv.get(id);
     
     if (!storedData) {
       return NextResponse.json(
@@ -72,7 +70,7 @@ export async function GET(request: Request) {
   } catch (error) {
     console.error('データ取得エラー:', error);
     return NextResponse.json(
-      { success: false, message: 'サーバーエラーが発生しました' },
+      { success: false, message: `サーバーエラーが発生しました: ${error instanceof Error ? error.message : '不明なエラー'}` },
       { status: 500 }
     );
   }
