@@ -26,11 +26,15 @@ export default function Home() {
   const [syncStatus, setSyncStatus] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [syncId, setSyncId] = useState<string | null>(null); // 同期用IDの状態を追加
 
-  // コンポーネントのマウント時にデータをロード
+  // コンポーネントのマウント時にデータとsyncIdをロード
   useEffect(() => {
     const savedData = loadFromLocalStorage('courseRegistration', createInitialTimetable());
+    const savedSyncId = localStorage.getItem('syncId');
+    
     setTimetable(savedData);
+    setSyncId(savedSyncId);
     setIsLoading(false);
   }, []);
 
@@ -63,7 +67,7 @@ export default function Home() {
     setTimetable(updatedTimetable);
   };
 
-  // サーバーに同期する関数
+  // サーバーに同期する関数 (修正)
   const syncToServer = async () => {
     if (!timetable) return;
     
@@ -72,7 +76,7 @@ export default function Home() {
       
       console.log('同期リクエスト送信先:', '/api/sync');
       
-      const syncId = localStorage.getItem('syncId');
+      // 現在のsyncIdを使用
       console.log('現在のsyncId:', syncId || 'なし');
       
       const requestData = {
@@ -106,9 +110,10 @@ export default function Home() {
       
       if (response.ok && result.success) {
         setSyncStatus(`同期完了: ${new Date().toLocaleTimeString()}`);
-        // 結果からIDを取得して保存しておく
+        // 結果からIDを取得して保存し、状態も更新
         if (result.id) {
           localStorage.setItem('syncId', result.id);
+          setSyncId(result.id); // 状態も更新
           console.log('新しいsyncIdを保存:', result.id);
         }
       } else {
@@ -120,11 +125,11 @@ export default function Home() {
     }
   };
 
-  // サーバーからデータを読み込む関数
+  // サーバーからデータを読み込む関数 (修正)
   const restoreFromServer = async (customSyncId?: string) => {
-    let syncId = customSyncId || localStorage.getItem('syncId');
+    let idToUse = customSyncId || syncId;
     
-    if (!syncId) {
+    if (!idToUse) {
       setSyncStatus('同期IDが見つかりません');
       return;
     }
@@ -132,9 +137,9 @@ export default function Home() {
     try {
       setSyncStatus('データ取得中...');
       
-      console.log('データ取得リクエスト送信先:', `/api/sync?id=${syncId}`);
+      console.log('データ取得リクエスト送信先:', `/api/sync?id=${idToUse}`);
       
-      const response = await fetch(`/api/sync?id=${syncId}`);
+      const response = await fetch(`/api/sync?id=${idToUse}`);
       
       // 応答がJSONかどうかを確認
       const contentType = response.headers.get('content-type');
@@ -150,8 +155,9 @@ export default function Home() {
       
       if (response.ok && result.data) {
         setTimetable(result.data);
-        // 読み込み成功した場合は、常に使用した同期IDをlocalStorageに保存
-        localStorage.setItem('syncId', syncId);
+        // 読み込み成功した場合は、常に使用した同期IDをlocalStorageに保存し、状態も更新
+        localStorage.setItem('syncId', idToUse);
+        setSyncId(idToUse); // 状態も更新
         setSyncStatus(`読み込み完了: ${new Date().toLocaleTimeString()}`);
       } else {
         setSyncStatus(`エラー: ${result.message || 'データの取得に失敗しました'}`);
@@ -234,7 +240,7 @@ export default function Home() {
         <h2 className="text-lg font-semibold mb-2 text-gray-800">データ管理</h2>
         
         {/* 同期用ID表示 */}
-        <SyncIdDisplay />
+        <SyncIdDisplay syncId={syncId} />
         
         {/* 同期ステータス表示 */}
         {syncStatus && (

@@ -1,55 +1,40 @@
 // app/components/SyncIdDisplay.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-const SyncIdDisplay = () => {
-  const [syncId, setSyncId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+interface SyncIdDisplayProps {
+  syncId: string | null;
+}
 
-  useEffect(() => {
-    // コンポーネントがマウントされたときにlocalStorageから同期用IDを取得
-    const id = localStorage.getItem('syncId');
-    setSyncId(id);
-    
-    // localStorageの変更を監視するためのイベントリスナー
-    const handleStorageChange = () => {
-      const updatedId = localStorage.getItem('syncId');
-      setSyncId(updatedId);
-    };
-    
-    window.addEventListener('storage', handleStorageChange);
-    
-    // イベントリスナーのクリーンアップ
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
+const SyncIdDisplay: React.FC<SyncIdDisplayProps> = ({ syncId }) => {
+  const [isCopied, setIsCopied] = useState(false);
 
-  const copyToClipboard = () => {
+  const handleCopy = () => {
     if (syncId) {
       navigator.clipboard.writeText(syncId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // 2秒後にコピー状態をリセット
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
-  // 同期用IDがない場合は何も表示しない
   if (!syncId) {
-    return null;
+    return (
+      <div className="mb-2 text-sm p-2 bg-yellow-50 rounded border border-yellow-100 text-yellow-800">
+        同期用IDが未設定です。「サーバーに保存」を行うと同期用IDが生成されます。
+      </div>
+    );
   }
 
   return (
-    <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-      <h3 className="text-md font-semibold mb-2">同期用ID</h3>
-      <div className="flex items-center">
-        <code className="bg-gray-100 px-2 py-1 rounded mr-2 flex-grow overflow-x-auto text-sm">{syncId}</code>
-        <button
-          onClick={copyToClipboard}
-          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
-          title="クリップボードにコピー"
-        >
-          {copied ? "コピー済み" : "コピー"}
-        </button>
+    <div className="mb-2 flex items-center">
+      <div className="font-mono bg-gray-100 p-2 rounded flex-1 border border-gray-300 overflow-auto">
+        <span className="text-sm">同期用ID: {syncId}</span>
       </div>
+      <button
+        onClick={handleCopy}
+        className="ml-2 p-2 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 text-sm"
+      >
+        {isCopied ? '✓ コピー済' : 'コピー'}
+      </button>
     </div>
   );
 };
