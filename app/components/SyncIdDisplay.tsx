@@ -1,4 +1,6 @@
 // app/components/SyncIdDisplay.tsx
+'use client';
+
 import React, { useState } from 'react';
 
 interface SyncIdDisplayProps {
@@ -6,35 +8,39 @@ interface SyncIdDisplayProps {
 }
 
 const SyncIdDisplay: React.FC<SyncIdDisplayProps> = ({ syncId }) => {
-  const [isCopied, setIsCopied] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
     if (syncId) {
-      navigator.clipboard.writeText(syncId);
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
+      navigator.clipboard.writeText(syncId).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
     }
   };
 
   if (!syncId) {
     return (
-      <div className="mb-2 text-sm p-2 bg-yellow-50 rounded border border-yellow-100 text-yellow-800">
-        同期用IDが未設定です。「サーバーに保存」を行うと同期用IDが生成されます。
+      <div className="mb-4 p-2 bg-yellow-50 rounded border border-yellow-100 text-yellow-800">
+        同期用IDはまだ発行されていません。「サーバーに保存」を実行すると発行されます。
       </div>
     );
   }
 
   return (
-    <div className="mb-2 flex items-center">
-      <div className="font-mono bg-gray-100 p-2 rounded flex-1 border border-gray-300 overflow-auto">
-        <span className="text-sm">同期用ID: {syncId}</span>
+    <div className="mb-4">
+      <div className="text-sm font-medium text-gray-700 mb-1">同期用ID:</div>
+      <div className="flex space-x-2">
+        <code className="p-2 bg-gray-100 rounded border border-gray-200 text-gray-800 flex-grow overflow-x-auto">
+          {syncId}
+        </code>
+        <button
+          onClick={handleCopy}
+          className="px-3 py-1 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+        >
+          {copied ? 'コピー済み' : 'コピー'}
+        </button>
       </div>
-      <button
-        onClick={handleCopy}
-        className="ml-2 p-2 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 text-sm"
-      >
-        {isCopied ? '✓ コピー済' : 'コピー'}
-      </button>
     </div>
   );
 };

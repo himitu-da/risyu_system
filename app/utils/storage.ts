@@ -1,90 +1,130 @@
 // app/utils/storage.ts
-import { v4 as uuidv4 } from 'uuid';
 
-// 時間割のデータ型定義
+// 学期のリスト
+export const semesters = [
+  '1年春学期', '1年秋学期', 
+  '2年春学期', '2年秋学期', 
+  '3年春学期', '3年秋学期', 
+  '4年春学期', '4年秋学期'
+];
+
+// 曜日のリスト
+export const days = ['月', '火', '水', '木', '金'];
+
+// 時限のリスト
+export const periods = [1, 2, 3, 4, 5];
+
+// 科目の型定義
 export interface Course {
   name: string;
   credits: number;
 }
 
-export interface TimetableSlot {
+// 一日の時間割の型定義
+export interface DaySchedule {
   [period: number]: Course | null;
 }
 
-export interface DayTimetable {
-  [day: string]: TimetableSlot;
+// 一つの学期の時間割の型定義
+export interface SemesterData {
+  [day: string]: DaySchedule;
 }
 
+// 全学期の時間割の型定義
 export interface SemesterTimetable {
-  [semester: string]: DayTimetable;
+  [semester: string]: SemesterData;
 }
 
-// 定数定義
-export const semesters = [
-  '1年前期', '1年後期', '2年前期', '2年後期',
-  '3年前期', '3年後期', '4年前期', '4年後期'
-];
-
-export const days = ['月曜', '火曜', '水曜', '木曜', '金曜'];
-export const periods = [1, 2, 3, 4, 5];
-
-// 初期時間割データの作成
-export const createInitialTimetable = (): SemesterTimetable => {
-  const initial: SemesterTimetable = {};
+// 初期の時間割データを作成する関数
+export function createInitialTimetable(): SemesterTimetable {
+  const timetable: SemesterTimetable = {};
+  
+  // 各学期について
   semesters.forEach(semester => {
-    initial[semester] = {};
+    timetable[semester] = {};
+    
+    // 各曜日について
     days.forEach(day => {
-      initial[semester][day] = {};
+      timetable[semester][day] = {};
+      
+      // 各時限について (明示的に数値キーに変換)
       periods.forEach(period => {
-        initial[semester][day][period] = null;
+        timetable[semester][day][period] = null;
       });
     });
   });
-  return initial;
-};
-
-// ローカルストレージからデータを読み込む
-export const loadFromLocalStorage = (key: string, defaultValue: any = null): any => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Failed to parse data from localStorage:', e);
-      }
-    }
-  }
-  return defaultValue;
-};
-
-// ローカルストレージにデータを保存
-export const saveToLocalStorage = (key: string, data: any): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(key, JSON.stringify(data));
-  }
-};
-
-// ファイルへのエクスポート
-export const exportToFile = (data: any, filename: string = 'course_registration.json'): void => {
-  const dataStr = JSON.stringify(data);
-  const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
   
-  const downloadLink = document.createElement('a');
-  downloadLink.setAttribute('href', dataUri);
-  downloadLink.setAttribute('download', filename);
-  downloadLink.click();
-};
+  // データ構造が確実に初期化されているか確認
+  console.log('初期化された時間割:', JSON.stringify(timetable, null, 2).substring(0, 500) + '...');
+  
+  return timetable;
+}
 
-// 単位数計算
-export const calculateCredits = (timetable: SemesterTimetable, semester: string): number => {
+// ローカルストレージからデータを読み込む関数
+export function loadFromLocalStorage(key: string, defaultValue: SemesterTimetable): SemesterTimetable {
+  if (typeof window === 'undefined') {
+    return defaultValue;
+  }
+  
+  try {
+    const serializedData = localStorage.getItem(key);
+    if (serializedData === null) {
+      return defaultValue;
+    }
+    return JSON.parse(serializedData);
+  } catch (error) {
+    console.error('ローカルストレージからの読み込みエラー:', error);
+    return defaultValue;
+  }
+}
+
+// ローカルストレージにデータを保存する関数
+export function saveToLocalStorage(key: string, data: SemesterTimetable): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  
+  try {
+    const serializedData = JSON.stringify(data);
+    localStorage.setItem(key, serializedData);
+  } catch (error) {
+    console.error('ローカルストレージへの保存エラー:', error);
+  }
+}
+
+// データをファイルにエクスポートする関数
+export function exportToFile(data: SemesterTimetable): void {
+  try {
+    const serializedData = JSON.stringify(data, null, 2);
+    const blob = new Blob([serializedData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `履修登録_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // クリーンアップ
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 0);
+  } catch (error) {
+    console.error('ファイルエクスポートエラー:', error);
+    alert('ファイルのエクスポートに失敗しました');
+  }
+}
+
+// 特定の学期の単位数を計算する関数
+export function calculateCredits(timetable: SemesterTimetable, semester: string): number {
   let total = 0;
   
-  if (!timetable[semester]) return 0;
+  const semesterData = timetable[semester];
+  if (!semesterData) return 0;
   
-  Object.keys(timetable[semester]).forEach(day => {
-    Object.keys(timetable[semester][day]).forEach(period => {
-      const course = timetable[semester][day][Number(period)];
+  Object.values(semesterData).forEach(daySchedule => {
+    Object.values(daySchedule).forEach(course => {
       if (course) {
         total += course.credits;
       }
@@ -92,11 +132,15 @@ export const calculateCredits = (timetable: SemesterTimetable, semester: string)
   });
   
   return total;
-};
+}
 
-// 全学期の単位数計算
-export const calculateTotalCredits = (timetable: SemesterTimetable): number => {
-  return semesters.reduce((total, semester) => {
-    return total + calculateCredits(timetable, semester);
-  }, 0);
-};
+// 全学期の単位数を計算する関数
+export function calculateTotalCredits(timetable: SemesterTimetable): { [semester: string]: number } {
+  const result: { [semester: string]: number } = {};
+  
+  semesters.forEach(semester => {
+    result[semester] = calculateCredits(timetable, semester);
+  });
+  
+  return result;
+}

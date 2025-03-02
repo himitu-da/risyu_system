@@ -45,18 +45,30 @@ export default function Home() {
     }
   }, [timetable, isLoading]);
 
-  // 科目を追加する関数
-  const handleAddCourse = (course: { name: string; credits: number; day: string; period: number }) => {
-    if (!timetable) return;
-    
-    const updatedTimetable = { ...timetable };
-    updatedTimetable[currentSemester][course.day][course.period] = {
-      name: course.name,
-      credits: course.credits
-    };
-    
-    setTimetable(updatedTimetable);
+// 科目を追加する関数
+const handleAddCourse = (course: { name: string; credits: number; day: string; period: number }) => {
+  if (!timetable) return;
+  
+  // ディープコピーを作成
+  const updatedTimetable = JSON.parse(JSON.stringify(timetable));
+  
+  // 必要なネストされたオブジェクトが存在することを確認
+  if (!updatedTimetable[currentSemester]) {
+    updatedTimetable[currentSemester] = {};
+  }
+  
+  if (!updatedTimetable[currentSemester][course.day]) {
+    updatedTimetable[currentSemester][course.day] = {};
+  }
+  
+  // 科目を追加
+  updatedTimetable[currentSemester][course.day][course.period] = {
+    name: course.name,
+    credits: course.credits
   };
+  
+  setTimetable(updatedTimetable);
+};
   
   // 科目を削除する関数
   const handleRemoveCourse = (day: string, period: number) => {
