@@ -60,64 +60,101 @@ export default function Home() {
     setTimetable(updatedTimetable);
   };
 
-  // サーバーに同期する関数
-  const syncToServer = async () => {
-    if (!timetable) return;
+// サーバーに同期する関数
+const syncToServer = async () => {
+  if (!timetable) return;
+  
+  try {
+    setSyncStatus('同期中...');
     
-    try {
-      setSyncStatus('同期中...');
-      
-      const response = await fetch('/api/sync', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data: timetable,
-          id: localStorage.getItem('syncId')
-        }),
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        setSyncStatus(`同期完了: ${new Date().toLocaleTimeString()}`);
-        // 結果からIDを取得して保存しておく
-        if (result.id) {
-          localStorage.setItem('syncId', result.id);
-        }
-      } else {
-        setSyncStatus(`エラー: ${result.message || '同期に失敗しました'}`);
-      }
-    } catch (error: any) {
-      setSyncStatus(`エラー: ${error.message}`);
-    }
-  };
-
-  // サーバーからデータを復元する関数
-  const restoreFromServer = async () => {
+    console.log('同期リクエスト送信先:', '/api/sync');
+    
     const syncId = localStorage.getItem('syncId');
-    if (!syncId) {
-      setSyncStatus('同期IDが見つかりません');
+    console.log('現在のsyncId:', syncId || 'なし');
+    
+    const requestData = {
+      data: timetable,
+      id: syncId
+    };
+    
+    console.log('送信データ:', requestData);
+    
+    const response = await fetch('/api/sync', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestData),
+    });
+    
+    console.log('HTTPステータス:', response.status);
+    
+    // 応答がJSONかどうかを確認
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const textResponse = await response.text();
+      console.error('非JSONレスポンス:', textResponse.substring(0, 150) + '...');
+      setSyncStatus('エラー: サーバーからの応答が正しくありません。管理者に連絡してください。');
       return;
     }
     
-    try {
-      setSyncStatus('データ取得中...');
-      
-      const response = await fetch(`/api/sync?id=${syncId}`);
-      const result = await response.json();
-      
-      if (response.ok && result.data) {
-        setTimetable(result.data);
-        setSyncStatus(`復元完了: ${new Date().toLocaleTimeString()}`);
-      } else {
-        setSyncStatus(`エラー: ${result.message || 'データの取得に失敗しました'}`);
+    const result = await response.json();
+    console.log('パース済みレスポンス:', result);
+    
+    if (response.ok && result.success) {
+      setSyncStatus(`同期完了: ${new Date().toLocaleTimeString()}`);
+      // 結果からIDを取得して保存しておく
+      if (result.id) {
+        localStorage.setItem('syncId', result.id);
+        console.log('新しいsyncIdを保存:', result.id);
       }
-    } catch (error: any) {
-      setSyncStatus(`エラー: ${error.message}`);
+    } else {
+      setSyncStatus(`エラー: ${result.message || '同期に失敗しました'}`);
     }
-  };
+  } catch (error: any) {
+    console.error('同期エラー:', error);
+    setSyncStatus(`エラー: ${error.message}`);
+  }
+};
+
+// サーバーからデータを復元する関数
+const restoreFromServer = async () => {
+  const syncId = localStorage.getItem('syncId');
+  if (!syncId) {
+    setSyncStatus('同期IDが見つかりません');
+    return;
+  }
+  
+  try {
+    setSyncStatus('データ取得中...');
+    
+    console.log('データ取得リクエスト送信先:', `/api/sync?id=${syncId}`);
+    
+    const response = await fetch(`/api/sync?id=${syncId}`);
+    
+    // 応答がJSONかどうかを確認
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const textResponse = await response.text();
+      console.error('非JSONレスポンス:', textResponse.substring(0, 150) + '...');
+      setSyncStatus('エラー: サーバーからの応答が正しくありません。管理者に連絡してください。');
+      return;
+    }
+    
+    const result = await response.json();
+    console.log('パース済みレスポンス:', result);
+    
+    if (response.ok && result.data) {
+      setTimetable(result.data);
+      setSyncStatus(`復元完了: ${new Date().toLocaleTimeString()}`);
+    } else {
+      setSyncStatus(`エラー: ${result.message || 'データの取得に失敗しました'}`);
+    }
+  } catch (error: any) {
+    console.error('復元エラー:', error);
+    setSyncStatus(`エラー: ${error.message}`);
+  }
+};
 
   // ファイルからインポートする関数
   const importFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
