@@ -120,7 +120,7 @@ export default function Home() {
     }
   };
 
-  // サーバーからデータを復元する関数
+  // サーバーからデータを読み込む関数
   const restoreFromServer = async (customSyncId?: string) => {
     let syncId = customSyncId || localStorage.getItem('syncId');
     
@@ -150,16 +150,14 @@ export default function Home() {
       
       if (response.ok && result.data) {
         setTimetable(result.data);
-        // カスタム同期IDを使用している場合、localStorageに保存
-        if (customSyncId) {
-          localStorage.setItem('syncId', customSyncId);
-        }
-        setSyncStatus(`復元完了: ${new Date().toLocaleTimeString()}`);
+        // 読み込み成功した場合は、常に使用した同期IDをlocalStorageに保存
+        localStorage.setItem('syncId', syncId);
+        setSyncStatus(`読み込み完了: ${new Date().toLocaleTimeString()}`);
       } else {
         setSyncStatus(`エラー: ${result.message || 'データの取得に失敗しました'}`);
       }
     } catch (error: any) {
-      console.error('復元エラー:', error);
+      console.error('読み込みエラー:', error);
       setSyncStatus(`エラー: ${error.message}`);
     }
   };
@@ -254,7 +252,7 @@ export default function Home() {
             className="p-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
             onClick={openSyncModal}
           >
-            サーバーから復元
+            サーバーから読み込み
           </button>
           <button
             className="p-2 bg-purple-500 text-white rounded hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"

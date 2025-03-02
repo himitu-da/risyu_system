@@ -42,7 +42,7 @@ const SyncIdInputModal = ({ isOpen, onClose, onSubmit }: SyncIdInputModalProps) 
     >
       <div className="bg-white rounded-lg p-6 max-w-md w-full">
         <h2 className="text-xl font-bold mb-4">同期用IDの入力</h2>
-        <p className="text-gray-600 mb-4">他の端末で表示された同期用IDを入力して、データを同期できます。</p>
+        <p className="text-gray-600 mb-4">他の端末で表示された同期用IDを入力して、データを読み込みます。</p>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="syncId" className="block text-sm font-medium text-gray-700 mb-1">
@@ -71,7 +71,7 @@ const SyncIdInputModal = ({ isOpen, onClose, onSubmit }: SyncIdInputModalProps) 
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={!inputSyncId.trim()}
             >
-              同期
+              読み込み
             </button>
           </div>
         </form>

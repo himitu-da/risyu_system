@@ -32,23 +32,24 @@ const SyncIdDisplay = () => {
     }
   };
 
+  // 同期用IDがない場合は何も表示しない
+  if (!syncId) {
+    return null;
+  }
+
   return (
     <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
       <h3 className="text-md font-semibold mb-2">同期用ID</h3>
-      {syncId ? (
-        <div className="flex items-center">
-          <code className="bg-gray-100 px-2 py-1 rounded mr-2 flex-grow overflow-x-auto text-sm">{syncId}</code>
-          <button
-            onClick={copyToClipboard}
-            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
-            title="クリップボードにコピー"
-          >
-            {copied ? "コピー済み" : "コピー"}
-          </button>
-        </div>
-      ) : (
-        <p className="text-gray-500 text-sm">まだ同期用IDがありません。サーバーに保存すると生成されます。</p>
-      )}
+      <div className="flex items-center">
+        <code className="bg-gray-100 px-2 py-1 rounded mr-2 flex-grow overflow-x-auto text-sm">{syncId}</code>
+        <button
+          onClick={copyToClipboard}
+          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
+          title="クリップボードにコピー"
+        >
+          {copied ? "コピー済み" : "コピー"}
+        </button>
+      </div>
     </div>
   );
 };
