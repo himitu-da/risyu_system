@@ -43,7 +43,7 @@ const CreditSummary: React.FC<CreditSummaryProps> = ({ timetable, totalCredits }
               ></div>
             </div>
             <div className="flex justify-between text-xs text-[--muted-foreground] mt-1">
-              <span>0</span>
+              <span></span>
               <span>卒業要件: 124単位</span>
             </div>
           </div>
