@@ -1,24 +1,252 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
+/* ベースとなる変数（ライトモード） */
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --card-background: #ffffff;
+  --primary: #007bff;
+  --primary-hover: #0046b3;
+  --secondary: #f8f9fa;
+  --secondary-hover: #e9ecef;
+  --accent: #0057d9;
+  --muted: #f8f9fa;
+  --muted-foreground: #6c757d;
+  --border: #dee2e6;
+  --input: #ffffff;
+  --ring: #0057d9;
+  --radius: 10px;
+  --header-height: 3.5rem;
+  --primary-light: #e6f2ff; /* 薄い青色 */
+  --primary-dark: #0055b3; /* 濃い青色 */
 }
 
+/* データ属性でテーマ切り替え */
+html[data-theme="light"] {
+  --background: #ffffff;
+  --foreground: #171717;
+  --card-background: #ffffff;
+  --primary: #007bff;
+  --primary-hover: #0046b3;
+  --secondary: #f8f9fa;
+  --secondary-hover: #e9ecef;
+  --accent: #0057d9;
+  --muted: #f8f9fa;
+  --muted-foreground: #6c757d;
+  --border: #dee2e6;
+  --input: #ffffff;
+  --ring: #0057d9;
+  --primary-light: #e6f2ff;
+  --primary-dark: #0055b3;
+}
+
+html[data-theme="dark"] {
+  --background: #121212;
+  --foreground: #f8f9fa;
+  --card-background: #1e1e1e;
+  --primary: #0d6efd;
+  --primary-hover: #0b5ed7;
+  --secondary: #27292a;
+  --secondary-hover: #323536;
+  --accent: #0d6efd;
+  --muted: #27292a;
+  --muted-foreground: #adb5bd;
+  --border: #343a40;
+  --input: #1e1e1e;
+  --ring: #0d6efd;
+  --primary-light: #1a3a6c;
+  --primary-dark: #61a9ff;
+}
+
+/* システム設定による自動切り替え（データ属性が設定されていない場合のフォールバック） */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --background: #121212;
+    --foreground: #f8f9fa;
+    --card-background: #1e1e1e;
+    --primary: #0d6efd;
+    --primary-hover: #0b5ed7;
+    --secondary: #27292a;
+    --secondary-hover: #323536;
+    --accent: #0d6efd;
+    --muted: #27292a;
+    --muted-foreground: #adb5bd;
+    --border: #343a40;
+    --input: #1e1e1e;
+    --ring: #0d6efd;
   }
+}
+
+* {
+  border-color: var(--border);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ボタンスタイル */
+.btn {
+  padding-left: 1rem;
+  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition-property: all;
+  transition-duration: 200ms;
+}
+
+.btn:focus {
+  outline: none;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-offset-width: 2px;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-primary:focus {
+  --tw-ring-color: var(--primary);
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  color: var(--foreground);
+}
+
+.btn-secondary:hover {
+  background-color: var(--secondary-hover);
+}
+
+.btn-secondary:focus {
+  --tw-ring-color: var(--secondary);
+}
+
+/* カードスタイル */
+.card {
+  background-color: var(--card-background);
+  border-radius: var(--radius);
+  border-width: 1px;
+  border-color: var(--border);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-glass {
+  background-color: rgba(var(--card-background), 0.7);
+  backdrop-filter: blur(8px);
+}
+
+/* フォームスタイル */
+.form-input {
+  width: 100%;
+  padding-left: 0.75rem;
+  padding-right: 0.75rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 0.5rem;
+  border-width: 1px;
+  border-color: var(--border);
+  background-color: var(--input);
+  transition-property: all;
+  transition-duration: 200ms;
+}
+
+.form-input:focus {
+  outline: none;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  --tw-ring-color: var(--ring);
+  border-color: transparent;
+}
+
+/* テーブルスタイル */
+.table-modern {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-modern th {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  text-align: left;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  border-bottom-width: 1px;
+  border-color: var(--border);
+}
+
+.table-modern td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-bottom-width: 1px;
+  border-color: var(--border);
+}
+
+/* トランジションアニメーション */
+.fade-in {
+  transition-property: opacity;
+  transition-duration: 300ms;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.scale-in {
+  transition-property: transform;
+  transition-duration: 200ms;
+  transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* スクロールバースタイル */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--secondary);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(108, 117, 125, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(108, 117, 125, 0.5);
+}
+
+/* ヘッダー関連 */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--background);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }

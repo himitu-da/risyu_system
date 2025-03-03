@@ -1,7 +1,5 @@
 // app/components/SyncIdInputModal.tsx
-'use client';
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface SyncIdInputModalProps {
   isOpen: boolean;
@@ -10,60 +8,87 @@ interface SyncIdInputModalProps {
 }
 
 const SyncIdInputModal: React.FC<SyncIdInputModalProps> = ({ isOpen, onClose, onSubmit }) => {
-  const [inputSyncId, setInputSyncId] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
+  const [inputValue, setInputValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  
+  // モーダルが開いたら入力フィールドにフォーカス
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+      setInputValue('');
+    }
+  }, [isOpen]);
+  
+  // Escキーで閉じる
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
+  
+  // フォーム送信ハンドラ
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!inputSyncId.trim()) {
-      setError('同期用IDを入力してください');
-      return;
+    if (inputValue.trim()) {
+      onSubmit(inputValue.trim());
     }
-    
-    onSubmit(inputSyncId.trim());
-    setInputSyncId('');
-    setError(null);
   };
-
+  
   if (!isOpen) return null;
-
+  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-800">サーバーから読み込み</h2>
-        </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div 
+        className="relative w-full max-w-md p-6 rounded-2xl bg-[--card-background] shadow-xl border border-[--border]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={onClose}
+          className="absolute top-3 right-3 p-2 rounded-full hover:bg-[--secondary] transition-colors"
+          aria-label="閉じる"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
         
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label htmlFor="syncId" className="block text-sm font-medium text-gray-700 mb-1">
-              同期用ID
+        <h2 className="text-xl font-medium mb-4">同期IDの入力</h2>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label htmlFor="syncId" className="block text-sm font-medium mb-1 text-[--foreground]">
+              同期ID
             </label>
             <input
-              type="text"
+              ref={inputRef}
               id="syncId"
-              value={inputSyncId}
-              onChange={(e) => setInputSyncId(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-              placeholder="同期用IDを入力してください"
+              type="text"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              className="form-input"
+              placeholder="同期IDを入力してください"
+              required
             />
-            {error && (
-              <p className="mt-1 text-sm text-red-600">{error}</p>
-            )}
           </div>
           
-          <div className="flex justify-end space-x-2">
-            <button
-              type="button"
+          <div className="flex justify-end space-x-3">
+            <button 
+              type="button" 
               onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+              className="btn btn-secondary"
             >
               キャンセル
             </button>
-            <button
+            <button 
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+              className="btn btn-primary"
+              disabled={!inputValue.trim()}
             >
               読み込む
             </button>

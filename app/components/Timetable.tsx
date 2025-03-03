@@ -1,52 +1,34 @@
 // app/components/Timetable.tsx
-'use client';
-
 import React from 'react';
-
-interface Course {
-  name: string;
-  credits: number;
-}
-
-interface DaySchedule {
-  [period: number]: Course | null;
-}
-
-interface SemesterData {
-  [day: string]: DaySchedule;
-}
 
 interface TimetableProps {
   semester: string;
-  timetable: {
-    [semester: string]: SemesterData;
-  };
+  timetable: any;
   totalCredits: number;
   onRemoveCourse: (day: string, period: number) => void;
 }
 
-const Timetable: React.FC<TimetableProps> = ({
-  semester,
-  timetable,
-  totalCredits,
-  onRemoveCourse,
-}) => {
+const Timetable: React.FC<TimetableProps> = ({ semester, timetable, totalCredits, onRemoveCourse }) => {
   const days = ['月', '火', '水', '木', '金'];
   const periods = [1, 2, 3, 4, 5];
-
+  
+  // 特定の学期、曜日、時限の科目を取得
+  const getCourse = (day: string, period: number) => {
+    if (!timetable[semester] || !timetable[semester][day]) {
+      return null;
+    }
+    return timetable[semester][day][period] || null;
+  };
+  
   return (
-    <div className="my-6">
-      <h2 className="text-lg font-semibold mb-2 text-gray-800">
-        {semester} 時間割表 (総単位数: {totalCredits})
-      </h2>
-      
+    <div>
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse border border-gray-300">
+        <table className="w-full border-collapse table-fixed">
           <thead>
-            <tr className="bg-gray-100">
-              <th className="p-2 border border-gray-300"></th>
+            <tr className="bg-[--secondary]">
+              <th className="p-3 text-left font-medium text-[--muted-foreground] w-16"></th>
               {days.map((day) => (
-                <th key={day} className="p-2 border border-gray-300">
+                <th key={day} className="p-3 text-center font-medium text-[--muted-foreground] w-1/5">
                   {day}
                 </th>
               ))}
@@ -54,36 +36,36 @@ const Timetable: React.FC<TimetableProps> = ({
           </thead>
           <tbody>
             {periods.map((period) => (
-              <tr key={period}>
-                <td className="p-2 border border-gray-300 font-medium bg-gray-50">
+              <tr key={period} className="border-b border-[--border] min-h-[4.5rem]">
+                <td className="p-3 font-medium text-[--muted-foreground] bg-[--secondary]">
                   {period}限
                 </td>
                 {days.map((day) => {
-                  const course = timetable[semester]?.[day]?.[period] || null;
+                  const course = getCourse(day, period);
                   return (
-                    <td 
-                      key={`${day}-${period}`} 
-                      className="p-2 border border-gray-300 min-w-[120px] h-24 align-top"
-                    >
+                    <td key={day} className="p-2 border-r border-[--border] align-top">
                       {course ? (
-                        <div className="relative h-full">
-                          <div className="bg-blue-50 p-2 rounded h-full">
-                            <div className="font-medium text-blue-800">
-                              {course.name}
-                            </div>
-                            <div className="text-sm text-blue-600 mt-1">
-                              {course.credits}単位
-                            </div>
+                        <div className="flex flex-col min-h-[4rem] p-2 rounded-lg bg-[--card-background] border border-[--border] shadow-sm">
+                          <div className="font-medium text-sm flex-grow line-clamp-3 overflow-hidden">
+                            {course.name}
+                          </div>
+                          <div className="flex items-center justify-between mt-auto pt-1.5">
+                            <span className="text-xs text-[--muted-foreground]">{course.credits}単位</span>
                             <button
                               onClick={() => onRemoveCourse(day, period)}
-                              className="absolute bottom-1 right-1 text-xs p-1 bg-red-100 hover:bg-red-200 text-red-600 rounded"
+                              className="text-red-500 hover:text-red-600 p-1 rounded-full hover:bg-red-50 transition-colors"
+                              title="科目を削除"
                             >
-                              削除
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                              </svg>
                             </button>
                           </div>
                         </div>
                       ) : (
-                        <div className="h-full flex items-center justify-center text-gray-400">
+                        <div className="flex items-center justify-center min-h-[4rem] text-[--muted-foreground] text-sm">
                           -
                         </div>
                       )}
@@ -94,6 +76,13 @@ const Timetable: React.FC<TimetableProps> = ({
             ))}
           </tbody>
         </table>
+      </div>
+      
+      <div className="mt-4 p-3 bg-[--secondary] rounded-lg flex justify-end">
+        <div className="font-medium">
+          <span className="text-[--muted-foreground]">合計単位数:</span>{' '}
+          <span className="text-[--primary] text-lg">{totalCredits}</span>
+        </div>
       </div>
     </div>
   );

@@ -27,6 +27,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [syncId, setSyncId] = useState<string | null>(null); // 同期用IDの状態を追加
+  const [isFormOpen, setIsFormOpen] = useState(true); // 追加: フォームの開閉状態
 
   // コンポーネントのマウント時にデータとsyncIdをロード
   useEffect(() => {
@@ -45,30 +46,30 @@ export default function Home() {
     }
   }, [timetable, isLoading]);
 
-// 科目を追加する関数
-const handleAddCourse = (course: { name: string; credits: number; day: string; period: number }) => {
-  if (!timetable) return;
-  
-  // ディープコピーを作成
-  const updatedTimetable = JSON.parse(JSON.stringify(timetable));
-  
-  // 必要なネストされたオブジェクトが存在することを確認
-  if (!updatedTimetable[currentSemester]) {
-    updatedTimetable[currentSemester] = {};
-  }
-  
-  if (!updatedTimetable[currentSemester][course.day]) {
-    updatedTimetable[currentSemester][course.day] = {};
-  }
-  
-  // 科目を追加
-  updatedTimetable[currentSemester][course.day][course.period] = {
-    name: course.name,
-    credits: course.credits
+  // 科目を追加する関数
+  const handleAddCourse = (course: { name: string; credits: number; day: string; period: number }) => {
+    if (!timetable) return;
+    
+    // ディープコピーを作成
+    const updatedTimetable = JSON.parse(JSON.stringify(timetable));
+    
+    // 必要なネストされたオブジェクトが存在することを確認
+    if (!updatedTimetable[currentSemester]) {
+      updatedTimetable[currentSemester] = {};
+    }
+    
+    if (!updatedTimetable[currentSemester][course.day]) {
+      updatedTimetable[currentSemester][course.day] = {};
+    }
+    
+    // 科目を追加
+    updatedTimetable[currentSemester][course.day][course.period] = {
+      name: course.name,
+      credits: course.credits
+    };
+    
+    setTimetable(updatedTimetable);
   };
-  
-  setTimetable(updatedTimetable);
-};
   
   // 科目を削除する関数
   const handleRemoveCourse = (day: string, period: number) => {
@@ -79,24 +80,17 @@ const handleAddCourse = (course: { name: string; credits: number; day: string; p
     setTimetable(updatedTimetable);
   };
 
-  // サーバーに同期する関数 (修正)
+  // サーバーに同期する関数
   const syncToServer = async () => {
     if (!timetable) return;
     
     try {
       setSyncStatus('同期中...');
       
-      console.log('同期リクエスト送信先:', '/api/sync');
-      
-      // 現在のsyncIdを使用
-      console.log('現在のsyncId:', syncId || 'なし');
-      
       const requestData = {
         data: timetable,
         id: syncId
       };
-      
-      console.log('送信データ:', requestData);
       
       const response = await fetch('/api/sync', {
         method: 'POST',
@@ -106,19 +100,15 @@ const handleAddCourse = (course: { name: string; credits: number; day: string; p
         body: JSON.stringify(requestData),
       });
       
-      console.log('HTTPステータス:', response.status);
-      
       // 応答がJSONかどうかを確認
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const textResponse = await response.text();
-        console.error('非JSONレスポンス:', textResponse.substring(0, 150) + '...');
         setSyncStatus('エラー: サーバーからの応答が正しくありません。管理者に連絡してください。');
         return;
       }
       
       const result = await response.json();
-      console.log('パース済みレスポンス:', result);
       
       if (response.ok && result.success) {
         setSyncStatus(`同期完了: ${new Date().toLocaleTimeString()}`);
@@ -126,7 +116,6 @@ const handleAddCourse = (course: { name: string; credits: number; day: string; p
         if (result.id) {
           localStorage.setItem('syncId', result.id);
           setSyncId(result.id); // 状態も更新
-          console.log('新しいsyncIdを保存:', result.id);
         }
       } else {
         setSyncStatus(`エラー: ${result.message || '同期に失敗しました'}`);
@@ -137,7 +126,7 @@ const handleAddCourse = (course: { name: string; credits: number; day: string; p
     }
   };
 
-  // サーバーからデータを読み込む関数 (修正)
+  // サーバーからデータを読み込む関数
   const restoreFromServer = async (customSyncId?: string) => {
     let idToUse = customSyncId || syncId;
     
@@ -149,21 +138,17 @@ const handleAddCourse = (course: { name: string; credits: number; day: string; p
     try {
       setSyncStatus('データ取得中...');
       
-      console.log('データ取得リクエスト送信先:', `/api/sync?id=${idToUse}`);
-      
       const response = await fetch(`/api/sync?id=${idToUse}`);
       
       // 応答がJSONかどうかを確認
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         const textResponse = await response.text();
-        console.error('非JSONレスポンス:', textResponse.substring(0, 150) + '...');
         setSyncStatus('エラー: サーバーからの応答が正しくありません。管理者に連絡してください。');
         return;
       }
       
       const result = await response.json();
-      console.log('パース済みレスポンス:', result);
       
       if (response.ok && result.data) {
         setTimetable(result.data);
@@ -212,90 +197,140 @@ const handleAddCourse = (course: { name: string; credits: number; day: string; p
     reader.readAsText(file);
   };
 
+  // フォームの開閉を切り替える関数
+  const toggleForm = () => {
+    setIsFormOpen(!isFormOpen);
+  };
+
   if (isLoading) {
-    return <div className="flex justify-center items-center h-screen text-gray-800">Loading...</div>;
+    return (
+      <div className="flex justify-center items-center h-screen bg-[--background]">
+        <div className="animate-pulse flex flex-col items-center">
+          <div className="w-16 h-16 border-t-4 border-[--primary] border-solid rounded-full animate-spin"></div>
+          <p className="mt-4 text-[--foreground] font-medium">読み込み中...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl bg-white text-gray-800">
-      <h1 className="text-2xl font-bold mb-4">履修登録管理</h1>
-      
-      {/* 学期選択 */}
-      <SemesterSelector
-        currentSemester={currentSemester}
-        onChange={setCurrentSemester}
-      />
-      
-      {/* 科目登録フォーム */}
-      <CourseForm onAddCourse={handleAddCourse} />
-      
-      {/* 時間割表示 */}
-      {timetable && (
-        <Timetable
-          semester={currentSemester}
-          timetable={timetable}
-          totalCredits={calculateCredits(timetable, currentSemester)}
-          onRemoveCourse={handleRemoveCourse}
-        />
-      )}
-      
-      {/* 全体単位数の表示 */}
-      {timetable && (
-        <CreditSummary
-          timetable={timetable}
-          totalCredits={calculateTotalCredits(timetable)}
-        />
-      )}
-
-      {/* データ同期とインポート/エクスポート */}
-      <div className="p-4 bg-gray-50 rounded mb-4 border border-gray-200 shadow-sm">
-        <h2 className="text-lg font-semibold mb-2 text-gray-800">データ管理</h2>
+    <div className="min-h-screen bg-[--background] py-6">
+      <div className="container mx-auto px-4 max-w-6xl">
+        <header className="mb-8">
+          <h1 className="text-3xl font-medium tracking-tight mb-2" style={{ color: 'var(--foreground)' }}>履修登録管理</h1>
+          <p style={{ color: 'var(--muted-foreground)' }}>あなたの履修計画を効率的に管理します</p>
+        </header>
         
-        {/* 同期用ID表示 */}
-        <SyncIdDisplay syncId={syncId} />
+        {/* 学期選択 */}
+        <section className="mb-6">
+          <SemesterSelector
+            currentSemester={currentSemester}
+            onChange={setCurrentSemester}
+          />
+        </section>
         
-        {/* 同期ステータス表示 */}
-        {syncStatus && (
-          <div className="mb-2 text-sm p-2 bg-blue-50 rounded border border-blue-100 text-blue-800">{syncStatus}</div>
+        {/* 科目登録フォーム - トグルボタン追加 */}
+        <section className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-medium">科目登録</h2>
+            <button 
+              onClick={toggleForm}
+              className="btn btn-secondary text-sm px-3 py-1.5"
+            >
+              {isFormOpen ? '閉じる' : '開く'}
+            </button>
+          </div>
+          
+          {isFormOpen && (
+            <div className="card p-4 transition-all duration-300 ease-in-out">
+              <CourseForm onAddCourse={handleAddCourse} />
+            </div>
+          )}
+        </section>
+        
+        {/* 時間割表示 */}
+        {timetable && (
+          <section className="mb-8">
+            <h2 className="text-xl font-medium mb-3">時間割</h2>
+            <div className="card overflow-hidden">
+              <Timetable
+                semester={currentSemester}
+                timetable={timetable}
+                totalCredits={calculateCredits(timetable, currentSemester)}
+                onRemoveCourse={handleRemoveCourse}
+              />
+            </div>
+          </section>
         )}
         
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <button
-            className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            onClick={syncToServer}
-          >
-            サーバーに保存
-          </button>
-          <button
-            className="p-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50"
-            onClick={openSyncModal}
-          >
-            サーバーから読み込み
-          </button>
-          <button
-            className="p-2 bg-purple-500 text-white rounded hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50"
-            onClick={() => timetable && exportToFile(timetable)}
-          >
-            ファイルにエクスポート
-          </button>
-          <label className="p-2 bg-orange-500 text-white rounded hover:bg-orange-600 text-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50">
-            ファイルからインポート
-            <input
-              type="file"
-              accept=".json"
-              className="hidden"
-              onChange={importFromFile}
-            />
-          </label>
-        </div>
+        {/* 全体単位数の表示 */}
+        {timetable && (
+          <section className="mb-8">
+            <h2 className="text-xl font-medium mb-3">単位サマリー</h2>
+            <div className="card p-4">
+              <CreditSummary
+                timetable={timetable}
+                totalCredits={calculateTotalCredits(timetable)}
+              />
+            </div>
+          </section>
+        )}
+
+        {/* データ同期とインポート/エクスポート */}
+        <section className="mb-8">
+          <h2 className="text-xl font-medium mb-3">データ管理</h2>
+          <div className="card p-5">
+            {/* 同期用ID表示 */}
+            <SyncIdDisplay syncId={syncId} />
+            
+            {/* 同期ステータス表示 */}
+            {syncStatus && (
+              <div className="mb-4 p-3 rounded-lg bg-[--secondary] text-sm">
+                <div className={`flex items-center ${syncStatus.includes('エラー') ? 'text-red-500' : 'text-[--primary]'}`}>
+                  <span className="font-medium">{syncStatus}</span>
+                </div>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <button
+                className="btn btn-primary"
+                onClick={syncToServer}
+              >
+                サーバーに保存
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={openSyncModal}
+              >
+                サーバーから読み込み
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => timetable && exportToFile(timetable)}
+              >
+                ファイルにエクスポート
+              </button>
+              <label className="btn btn-secondary text-center cursor-pointer inline-flex items-center justify-center">
+                ファイルからインポート
+                <input
+                  type="file"
+                  accept=".json"
+                  className="hidden"
+                  onChange={importFromFile}
+                />
+              </label>
+            </div>
+          </div>
+        </section>
+        
+        {/* 同期用ID入力モーダル */}
+        <SyncIdInputModal
+          isOpen={isSyncModalOpen}
+          onClose={() => setIsSyncModalOpen(false)}
+          onSubmit={handleSyncSubmit}
+        />
       </div>
-      
-      {/* 同期用ID入力モーダル */}
-      <SyncIdInputModal
-        isOpen={isSyncModalOpen}
-        onClose={() => setIsSyncModalOpen(false)}
-        onSubmit={handleSyncSubmit}
-      />
     </div>
   );
 }
