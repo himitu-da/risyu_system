@@ -1,11 +1,19 @@
 @import "tailwindcss";
 
+/* ======================
+   フォント定義
+   ====================== */
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 
+               "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 
+               "Liberation Mono", "Courier New", monospace;
 }
 
-/* ベースとなる変数（ライトモード） */
+/* ======================
+   カラーテーマ変数
+   ====================== */
+/* ライトテーマ (デフォルト) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -26,7 +34,7 @@
   --primary-dark: #0055b3; /* 濃い青色 */
 }
 
-/* データ属性でテーマ切り替え */
+/* ダークテーマ (data-theme="dark"時) */
 html[data-theme="light"] {
   --background: #ffffff;
   --foreground: #171717;
@@ -48,22 +56,27 @@ html[data-theme="light"] {
 html[data-theme="dark"] {
   --background: #121212;
   --foreground: #f8f9fa;
-  --card-background: #1e1e1e;
+  /* カード背景を少し明るく */
+  --card-background: #2b2f31;
   --primary: #0d6efd;
   --primary-hover: #0b5ed7;
-  --secondary: #27292a;
-  --secondary-hover: #323536;
+  /* セカンダリ背景を少し明るく */
+  --secondary: #343a40;
+  --secondary-hover: #3e444a; /* ホバー色も調整 */
   --accent: #0d6efd;
-  --muted: #27292a;
-  --muted-foreground: #adb5bd;
-  --border: #343a40;
-  --input: #1e1e1e;
+  /* ミューテッド背景もセカンダリに合わせる */
+  --muted: #343a40;
+  /* ミューテッド文字色を明るく */
+  --muted-foreground: #ced4da;
+  /* ボーダー色を少し明るく */
+  --border: #495057;
+  --input: #1e1e1e; /* 入力欄は元のまま */
   --ring: #0d6efd;
   --primary-light: #1a3a6c;
   --primary-dark: #61a9ff;
 }
 
-/* システム設定による自動切り替え（データ属性が設定されていない場合のフォールバック） */
+/* システム設定によるダークモード (フォールバック) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --background: #121212;
@@ -82,6 +95,9 @@ html[data-theme="dark"] {
   }
 }
 
+/* ======================
+   ベーススタイル
+   ====================== */
 * {
   border-color: var(--border);
 }
@@ -95,7 +111,11 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* ボタンスタイル */
+/* ======================
+   コンポーネントスタイル
+   ====================== */
+
+/* ----- ボタン ----- */
 .btn {
   padding-left: 1rem;
   padding-right: 1rem;
@@ -141,7 +161,7 @@ body {
   --tw-ring-color: var(--secondary);
 }
 
-/* カードスタイル */
+/* ----- カード ----- */
 .card {
   background-color: var(--card-background);
   border-radius: var(--radius);
@@ -157,7 +177,7 @@ body {
   backdrop-filter: blur(8px);
 }
 
-/* フォームスタイル */
+/* ----- フォーム ----- */
 .form-input {
   width: 100%;
   padding-left: 0.75rem;
@@ -181,7 +201,7 @@ body {
   border-color: transparent;
 }
 
-/* テーブルスタイル */
+/* ----- テーブル ----- */
 .table-modern {
   width: 100%;
   border-collapse: collapse;
@@ -208,7 +228,9 @@ body {
   border-color: var(--border);
 }
 
-/* トランジションアニメーション */
+/* ======================
+   アニメーション
+   ====================== */
 .fade-in {
   transition-property: opacity;
   transition-duration: 300ms;
@@ -221,7 +243,9 @@ body {
   transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
 }
 
-/* スクロールバースタイル */
+/* ======================
+   スクロールバー
+   ====================== */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -240,7 +264,9 @@ body {
   background-color: rgba(108, 117, 125, 0.5);
 }
 
-/* ヘッダー関連 */
+/* ======================
+   ヘッダー
+   ====================== */
 .header {
   position: sticky;
   top: 0;

@@ -1,41 +1,56 @@
 // app/utils/storage.ts
 
-// 学期のリスト
+/**
+ * アプリケーションで使用する定数定義
+ */
 export const semesters = [
-  '1年春学期', '1年秋学期', 
-  '2年春学期', '2年秋学期', 
-  '3年春学期', '3年秋学期', 
+  '1年春学期', '1年秋学期',
+  '2年春学期', '2年秋学期',
+  '3年春学期', '3年秋学期',
   '4年春学期', '4年秋学期'
-];
+] as const;
 
-// 曜日のリスト
-export const days = ['月', '火', '水', '木', '金'];
+export const days = ['月', '火', '水', '木', '金'] as const;
+export const periods = [1, 2, 3, 4, 5] as const;
 
-// 時限のリスト
-export const periods = [1, 2, 3, 4, 5];
-
-// 科目の型定義
+/**
+ * 科目情報の型定義
+ */
 export interface Course {
+  /** 科目名 */
   name: string;
+  /** 単位数 */
   credits: number;
 }
 
-// 一日の時間割の型定義
+/**
+ * 1日の時間割の型定義
+ * 時限をキー、科目情報またはnullを値とする
+ */
 export interface DaySchedule {
   [period: number]: Course | null;
 }
 
-// 一つの学期の時間割の型定義
+/**
+ * 1学期分の時間割データの型定義
+ * 曜日をキー、DayScheduleを値とする
+ */
 export interface SemesterData {
   [day: string]: DaySchedule;
 }
 
-// 全学期の時間割の型定義
+/**
+ * 全学期の時間割データの型定義
+ * 学期名をキー、SemesterDataを値とする
+ */
 export interface SemesterTimetable {
   [semester: string]: SemesterData;
 }
 
-// 初期の時間割データを作成する関数
+/**
+ * 空の時間割データ構造を作成
+ * @returns 初期化されたSemesterTimetableオブジェクト
+ */
 export function createInitialTimetable(): SemesterTimetable {
   const timetable: SemesterTimetable = {};
   
@@ -54,13 +69,19 @@ export function createInitialTimetable(): SemesterTimetable {
     });
   });
   
-  // データ構造が確実に初期化されているか確認
-  console.log('初期化された時間割:', JSON.stringify(timetable, null, 2).substring(0, 500) + '...');
+  if (process.env.NODE_ENV === 'development') {
+    console.debug('初期化された時間割データ構造');
+  }
   
   return timetable;
 }
 
-// ローカルストレージからデータを読み込む関数
+/**
+ * ローカルストレージから時間割データを読み込む
+ * @param key ストレージキー
+ * @param defaultValue データが存在しない場合のデフォルト値
+ * @returns 読み込んだデータまたはデフォルト値
+ */
 export function loadFromLocalStorage(key: string, defaultValue: SemesterTimetable): SemesterTimetable {
   if (typeof window === 'undefined') {
     return defaultValue;
@@ -78,7 +99,11 @@ export function loadFromLocalStorage(key: string, defaultValue: SemesterTimetabl
   }
 }
 
-// ローカルストレージにデータを保存する関数
+/**
+ * 時間割データをローカルストレージに保存
+ * @param key ストレージキー
+ * @param data 保存するデータ
+ */
 export function saveToLocalStorage(key: string, data: SemesterTimetable): void {
   if (typeof window === 'undefined') {
     return;
@@ -92,7 +117,10 @@ export function saveToLocalStorage(key: string, data: SemesterTimetable): void {
   }
 }
 
-// データをファイルにエクスポートする関数
+/**
+ * 時間割データをJSONファイルとしてエクスポート
+ * @param data エクスポートするデータ
+ */
 export function exportToFile(data: SemesterTimetable): void {
   try {
     const serializedData = JSON.stringify(data, null, 2);
@@ -116,7 +144,12 @@ export function exportToFile(data: SemesterTimetable): void {
   }
 }
 
-// 特定の学期の単位数を計算する関数
+/**
+ * 指定学期の合計単位数を計算
+ * @param timetable 時間割データ
+ * @param semester 対象学期
+ * @returns 合計単位数
+ */
 export function calculateCredits(timetable: SemesterTimetable, semester: string): number {
   let total = 0;
   
@@ -134,8 +167,12 @@ export function calculateCredits(timetable: SemesterTimetable, semester: string)
   return total;
 }
 
-// 全学期の単位数を計算する関数
-export function calculateTotalCredits(timetable: SemesterTimetable): { [semester: string]: number } {
+/**
+ * 全学期の単位数を計算
+ * @param timetable 時間割データ
+ * @returns 学期ごとの単位数を含むオブジェクト
+ */
+export function calculateTotalCredits(timetable: SemesterTimetable): Record<string, number> {
   const result: { [semester: string]: number } = {};
   
   semesters.forEach(semester => {

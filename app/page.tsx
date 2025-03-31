@@ -20,14 +20,18 @@ import {
 } from './utils/storage';
 
 export default function Home() {
-  // 状態の初期化
+  // アプリケーションの主要な状態管理
   const [timetable, setTimetable] = useState<SemesterTimetable | null>(null);
-  const [currentSemester, setCurrentSemester] = useState(semesters[0]);
-  const [syncStatus, setSyncStatus] = useState('');
+  const [currentSemester, setCurrentSemester] = useState<typeof semesters[number]>(semesters[0]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // データ同期関連の状態
+  const [syncStatus, setSyncStatus] = useState('');
+  const [syncId, setSyncId] = useState<string | null>(null);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
-  const [syncId, setSyncId] = useState<string | null>(null); // 同期用IDの状態を追加
-  const [isFormOpen, setIsFormOpen] = useState(true); // 追加: フォームの開閉状態
+  
+  // UI関連の状態
+  const [isFormOpen, setIsFormOpen] = useState(true);
 
   // コンポーネントのマウント時にデータとsyncIdをロード
   useEffect(() => {
@@ -46,14 +50,17 @@ export default function Home() {
     }
   }, [timetable, isLoading]);
 
-  // 科目を追加する関数
+  /**
+   * 科目を時間割に追加する
+   * @param course 追加する科目情報 (名前、単位数、曜日、時限)
+   */
   const handleAddCourse = (course: { name: string; credits: number; day: string; period: number }) => {
     if (!timetable) return;
     
-    // ディープコピーを作成
+    // イミュータブルな更新のためにディープコピーを作成
     const updatedTimetable = JSON.parse(JSON.stringify(timetable));
     
-    // 必要なネストされたオブジェクトが存在することを確認
+    // 必要なデータ構造が存在しない場合は初期化
     if (!updatedTimetable[currentSemester]) {
       updatedTimetable[currentSemester] = {};
     }
@@ -71,16 +78,58 @@ export default function Home() {
     setTimetable(updatedTimetable);
   };
   
-  // 科目を削除する関数
+  /**
+   * 科目を時間割から削除する
+   * @param day 曜日
+   * @param period 時限
+   */
   const handleRemoveCourse = (day: string, period: number) => {
     if (!timetable) return;
+
+    // イミュータブルな更新のためにディープコピーを作成
+    const updatedTimetable = JSON.parse(JSON.stringify(timetable));
+
+    // 該当の科目を削除 (nullに設定)
+    if (updatedTimetable[currentSemester]?.[day]) {
+      updatedTimetable[currentSemester][day][period] = null;
+    }
     
-    const updatedTimetable = { ...timetable };
-    updatedTimetable[currentSemester][day][period] = null;
     setTimetable(updatedTimetable);
   };
 
-  // サーバーに同期する関数
+  /**
+   * 科目を移動する
+   * @param source 移動元の曜日と時限
+   * @param destination 移動先の曜日と時限
+   */
+  const handleMoveCourse = (
+    source: {day: string; period: number},
+    destination: {day: string; period: number}
+  ) => {
+    if (!timetable) return;
+
+    // イミュータブルな更新のためにディープコピーを作成
+    const updatedTimetable = JSON.parse(JSON.stringify(timetable));
+
+    // 移動元と移動先の科目を取得
+    const sourceCourse = updatedTimetable[currentSemester]?.[source.day]?.[source.period] || null;
+    const destinationCourse = updatedTimetable[currentSemester]?.[destination.day]?.[destination.period] || null;
+
+    // 移動元と移動先のデータ構造が存在しない場合は初期化
+    if (!updatedTimetable[currentSemester]) updatedTimetable[currentSemester] = {};
+    if (!updatedTimetable[currentSemester][source.day]) updatedTimetable[currentSemester][source.day] = {};
+    if (!updatedTimetable[currentSemester][destination.day]) updatedTimetable[currentSemester][destination.day] = {};
+
+    // 科目を入れ替え
+    updatedTimetable[currentSemester][destination.day][destination.period] = sourceCourse;
+    updatedTimetable[currentSemester][source.day][source.period] = destinationCourse; // 移動元には移動先の科目を入れる (nullの場合もある)
+    
+    setTimetable(updatedTimetable);
+  };
+
+  /**
+   * 時間割データをサーバーに保存
+   */
   const syncToServer = async () => {
     if (!timetable) return;
     
@@ -126,7 +175,10 @@ export default function Home() {
     }
   };
 
-  // サーバーからデータを読み込む関数
+  /**
+   * サーバーから時間割データを取得
+   * @param customSyncId 使用する同期ID (オプション)
+   */
   const restoreFromServer = async (customSyncId?: string) => {
     let idToUse = customSyncId || syncId;
     
@@ -165,18 +217,24 @@ export default function Home() {
     }
   };
 
-  // 同期モーダルを開く
-  const openSyncModal = () => {
-    setIsSyncModalOpen(true);
-  };
+  /**
+   * 同期モーダルを開く
+   */
+  const openSyncModal = () => setIsSyncModalOpen(true);
 
-  // 同期IDが入力されてモーダルからサブミットされたとき
+  /**
+   * 同期IDを送信してデータを取得
+   * @param inputSyncId 入力された同期ID
+   */
   const handleSyncSubmit = (inputSyncId: string) => {
     setIsSyncModalOpen(false);
     restoreFromServer(inputSyncId);
   };
 
-  // ファイルからインポートする関数
+  /**
+   * JSONファイルから時間割をインポート
+   * @param event ファイル入力イベント
+   */
   const importFromFile = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -197,10 +255,10 @@ export default function Home() {
     reader.readAsText(file);
   };
 
-  // フォームの開閉を切り替える関数
-  const toggleForm = () => {
-    setIsFormOpen(!isFormOpen);
-  };
+  /**
+   * 科目登録フォームの表示を切り替え
+   */
+  const toggleForm = () => setIsFormOpen(!isFormOpen);
 
   if (isLoading) {
     return (
@@ -258,6 +316,7 @@ export default function Home() {
                 timetable={timetable}
                 totalCredits={calculateCredits(timetable, currentSemester)}
                 onRemoveCourse={handleRemoveCourse}
+                onMoveCourse={handleMoveCourse}
               />
             </div>
           </section>
